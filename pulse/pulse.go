@@ -17,9 +17,8 @@ func failOnError(err error, msg string) {
 type pulseQueue struct {
 }
 
-// Connection represents a connection to the Pulse AMQP server.
-// If connecting to production, you can use NewConnection(user string, user pass)
-// convenience function which already knows the production url.
+// connection is not exported, so that a factory function must be used
+// to create an instance, to control variable initialisation
 type connection struct {
 	User        string
 	Password    string
@@ -28,8 +27,6 @@ type connection struct {
 	connected   bool
 	closedAlert chan amqp.Error
 }
-
-type Exchange string
 
 func (c *connection) SetURL(url string) {
 	c.Url = url
@@ -62,6 +59,7 @@ func (c *connection) connect() {
 	// }(c.closedAlert)
 }
 
+// Having a custom type
 type Binding interface {
 	RoutingKey() string
 	ExchangeName() string
@@ -134,7 +132,7 @@ func (c *connection) Consume(
 			nil,   // arguments
 		)
 	}
-	failOnError(err, "Failed to declare a queue")
+	failOnError(err, "Failed to declare queue")
 
 	for i := range bindings {
 		log.Printf("Binding queue %s to exchange %s with routing key %s", q.Name, bindings[i].ExchangeName(), bindings[i].RoutingKey())
@@ -160,6 +158,7 @@ func (c *connection) Consume(
 
 	go func() {
 		for i := range eventsChan {
+			// fmt.Println(string(i.Body))
 			callback(i)
 		}
 	}()
