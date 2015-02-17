@@ -5,6 +5,13 @@ import (
 	"fmt"
 	"github.com/streadway/amqp"
 	"log"
+	"os"
+	"regexp"
+)
+
+const (
+	reUsername string = "^.*://([^:@/]*)[:@].*$"
+	rePassword string = "^.*://[^:@/]*:([^@/]*)@.*$"
 )
 
 func failOnError(err error, msg string) {
@@ -32,17 +39,50 @@ func (c *connection) SetURL(url string) {
 	c.URL = url
 }
 
+func match(regex, text string) string {
+	if matched, _ := regexp.MatchString(regex, text); matched {
+		re := regexp.MustCompile(regex)
+		return re.ReplaceAllString(text, "$1")
+	}
+	return ""
+}
+
 // NewConnection returns a connection to the production instance (pulse.mozilla.org).
 // In production, users and passwords can be self-managed by Pulse Guardian under
 // https://pulse.mozilla.org/profile
 // To use a non-production environment, call pulse.SetURL(<alternative_url>) after
 // calling NewConnection. Please note, creating the connection does not cause any
 // network traffic, the connection is only established when calling Consume function.
-func NewConnection(user string, password string) connection {
+func NewConnection(pulseUser string, pulsePassword string, amqpUrl string) connection {
+	if amqpUrl == "" {
+		amqpUrl = "amqps://pulse.mozilla.org:5671"
+	}
+	if pulseUser == "" {
+		pulseUser = match(reUsername, amqpUrl)
+	}
+	if pulsePassword == "" {
+		pulsePassword = match(rePassword, amqpUrl)
+	}
+	if pulseUser == "" {
+		pulseUser = os.Getenv("PULSE_USERNAME")
+	}
+	if pulsePassword == "" {
+		pulsePassword = os.Getenv("PULSE_PASSWORD")
+	}
+	if pulseUser == "" {
+		pulseUser = "guest"
+	}
+	if pulsePassword == "" {
+		pulsePassword = "guest"
+	}
+	// now substitute in real username and password into url...
+	re := regexp.MustCompile("^(.*://)[^:@/]*:[^@/]*@(.*)$")
+	amqpUrl = re.ReplaceAllString(amqpUrl, "${1}"+pulseUser+":"+pulsePassword+"@${2}")
+
 	return connection{
-		User:     user,
-		Password: password,
-		URL:      "amqps://" + user + ":" + password + "@pulse.mozilla.org:5671"}
+		User:     pulseUser,
+		Password: pulsePassword,
+		URL:      amqpUrl}
 }
 
 func (c *connection) connect() {
