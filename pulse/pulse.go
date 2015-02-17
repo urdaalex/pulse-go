@@ -22,29 +22,32 @@ type pulseQueue struct {
 type connection struct {
 	User        string
 	Password    string
-	Url         string
+	URL         string
 	AMQPConn    *amqp.Connection
 	connected   bool
 	closedAlert chan amqp.Error
 }
 
 func (c *connection) SetURL(url string) {
-	c.Url = url
+	c.URL = url
 }
 
 // NewConnection returns a connection to the production instance (pulse.mozilla.org).
 // In production, users and passwords can be self-managed by Pulse Guardian under
 // https://pulse.mozilla.org/profile
+// To use a non-production environment, call pulse.SetURL(<alternative_url>) after
+// calling NewConnection. Please note, creating the connection does not cause any
+// network traffic, the connection is only established when calling Consume function.
 func NewConnection(user string, password string) connection {
 	return connection{
 		User:     user,
 		Password: password,
-		Url:      "amqps://" + user + ":" + password + "@pulse.mozilla.org:5671"}
+		URL:      "amqps://" + user + ":" + password + "@pulse.mozilla.org:5671"}
 }
 
 func (c *connection) connect() {
 	var err error
-	c.AMQPConn, err = amqp.Dial(c.Url)
+	c.AMQPConn, err = amqp.Dial(c.URL)
 	failOnError(err, "Failed to connect to RabbitMQ")
 	c.connected = true
 	// reconnect if drops
@@ -59,7 +62,6 @@ func (c *connection) connect() {
 	// }(c.closedAlert)
 }
 
-// Having a custom type
 type Binding interface {
 	RoutingKey() string
 	ExchangeName() string
@@ -87,6 +89,7 @@ func (c *connection) Consume(
 	callback func(amqp.Delivery),
 	prefetch int,
 	maxLength int,
+	autoAck bool,
 	bindings ...Binding) pulseQueue {
 
 	if !c.connected {
@@ -95,7 +98,6 @@ func (c *connection) Consume(
 
 	ch, err := c.AMQPConn.Channel()
 	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
 
 	for i := range bindings {
 		err = ch.ExchangeDeclarePassive(
@@ -135,7 +137,7 @@ func (c *connection) Consume(
 	failOnError(err, "Failed to declare queue")
 
 	for i := range bindings {
-		log.Printf("Binding queue %s to exchange %s with routing key %s", q.Name, bindings[i].ExchangeName(), bindings[i].RoutingKey())
+		log.Printf("Binding %s to %s with routing key %s", q.Name, bindings[i].ExchangeName(), bindings[i].RoutingKey())
 		err = ch.QueueBind(
 			q.Name, // queue name
 			bindings[i].RoutingKey(),   // routing key
@@ -146,13 +148,13 @@ func (c *connection) Consume(
 	}
 
 	eventsChan, err := ch.Consume(
-		q.Name, // queue
-		"",     // consumer
-		true,   // auto ack
-		false,  // exclusive
-		false,  // no local
-		false,  // no wait
-		nil,    // args
+		q.Name,  // queue
+		"",      // consumer
+		autoAck, // auto ack
+		false,   // exclusive
+		false,   // no local
+		false,   // no wait
+		nil,     // args
 	)
 	failOnError(err, "Failed to register a consumer")
 
@@ -161,18 +163,19 @@ func (c *connection) Consume(
 			// fmt.Println(string(i.Body))
 			callback(i)
 		}
+		fmt.Println("Seem to have exited events loop?!!!")
 	}()
 	return pulseQueue{}
 }
 
-func (pq pulseQueue) Pause() {
+func (pq *pulseQueue) Pause() {
 }
 
-func (pq pulseQueue) Delete() {
+func (pq *pulseQueue) Delete() {
 }
 
-func (pq pulseQueue) Resume() {
+func (pq *pulseQueue) Resume() {
 }
 
-func (pq pulseQueue) Close() {
+func (pq *pulseQueue) Close() {
 }
