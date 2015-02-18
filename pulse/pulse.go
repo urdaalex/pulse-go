@@ -1,3 +1,32 @@
+// Package pulse provides operations for interacting with
+// https://pulse.mozilla.org/.  Currently it supports consuming messages, not
+// publishing messages. Please note publishing messages is entirely possible
+// using package "github.com/streadway/amqp" directly, and indeed this library
+// is built on top of the amqp package. If a user so wishes, they can also
+// consume pulse messages programming directly with the amqp package too.
+// However, for a user that is simply interesting in processing pulse messages
+// without wishing to acquire a detailed understanding of how pulse.mozilla.org
+// has been designed, or how AMQP 0.9.1 works, this client provides basic
+// utility methods to get you started off quickly.
+//
+// Please note that parent package "github.com/petemoore/pulse-go" provides a
+// very simple command line interface into this library too, which can be
+// called directly from a shell, for example, so that the user requires no go
+// programming expertise.
+//
+// To get started, let's create an example go program which uses this library.
+// The first thing we need to do is establish a connection to pulse which we do
+// like this:
+//
+//  package main
+//
+//  import (
+//  	"github.com/petemoore/pulse-go/pulse"
+//  )
+//
+//  func main() {
+//  	p1 := pulse.NewConnection("myuser", "mypassword", "")
+//  }
 package pulse
 
 import (
