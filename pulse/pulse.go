@@ -18,6 +18,33 @@
 // The first thing we need to do is establish a connection to pulse which we do
 // like this:
 //
+//  conn := pulse.NewConnection("myuser", "mypassword", "")
+//
+// This does not create an actual connection to the pulse server, only prepares
+// the data that will be needed when we finally make the connection.  Users and
+// passwords can be created by going to https://pulse.mozilla.org and
+// registering an account.  Please note the third string passed to
+// NewConnection is the amqp url to use to connect to the pulse server. If you
+// pass an empty string, it will default to using production. However if you
+// have a different instance to connect to, such as a test, dev or staging
+// instance of pulse, you may provide the url for that instance instead.
+//
+// So now we have created a connection, we should create a new queue, or
+// connect to an existing one, and bind it to one or more exchanges with a set
+// of exchange key / routing key pairs.  This sounds rather complex, but in
+// fact is quite trivial.
+//
+// In pulse, all messages are delivered to "topic exchanges" and the way to
+// receive these messages is to get the ones you are interested in copied onto
+// a queue you can read from, and then to read them from the queue. This is
+// called binding. To bind messages from an exchange to a queue, you specify
+// the name of the exchange you want to receive messages from, and a matching
+// criteria to select just those you want. This matching criteria consists of a
+// '.' delimited string such as *.*.*.my-little-pony.*.*.* which allows you to
+// match all messages where the 4th field in the message "routing key" is
+// "my-little-pony". # is the same as * but matches dots too, so
+// *.*.*.my-little-pony.# would also match in this case.
+//
 //  package main
 //
 //  import (
@@ -25,7 +52,7 @@
 //  )
 //
 //  func main() {
-//  	p1 := pulse.NewConnection("myuser", "mypassword", "")
+//  	conn := pulse.NewConnection("myuser", "mypassword", "")
 //  }
 package pulse
 
