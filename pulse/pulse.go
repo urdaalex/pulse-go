@@ -76,8 +76,9 @@ func NewConnection(pulseUser string, pulsePassword string, amqpUrl string) conne
 		pulsePassword = "guest"
 	}
 	// now substitute in real username and password into url...
-	re := regexp.MustCompile("^(.*://)[^:@/]*:[^@/]*@(.*)$")
-	amqpUrl = re.ReplaceAllString(amqpUrl, "${1}"+pulseUser+":"+pulsePassword+"@${2}")
+
+	re := regexp.MustCompile("^(.*://)([^@/]*@|)([^@]*)(/.*|$)")
+	amqpUrl = re.ReplaceAllString(amqpUrl, "${1}"+pulseUser+":"+pulsePassword+"@${3}${4}")
 
 	return connection{
 		User:     pulseUser,

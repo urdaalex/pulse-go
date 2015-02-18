@@ -76,13 +76,13 @@ func main() {
 	amqpUrl := ""
 	pulseUser := ""
 	pulsePassword := ""
-	if x, ok := arguments["-s"]; ok {
+	if x := arguments["-s"]; x != nil {
 		amqpUrl = x.(string)
 	}
-	if x, ok := arguments["-u"]; ok {
+	if x := arguments["-u"]; x != nil {
 		pulseUser = x.(string)
 	}
-	if x, ok := arguments["-p"]; ok {
+	if x := arguments["-p"]; x != nil {
 		pulsePassword = x.(string)
 	}
 
