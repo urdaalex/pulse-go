@@ -17,17 +17,17 @@ to standard out.
 
 Derivation of username, password and AMQP server url
 ====================================================
+If no AMQP server is specified, production will be used (amqps://pulse.mozilla.org:5671).
+
 If a pulse username is specified on the command line, it will be used.
-Otherwise, if the provided AMQP server url provided contains a username, it will be used.
+Otherwise, if the AMQP server url is provided and contains a username, it will be used.
 Otherwise, if a value is set in the environment variable PULSE_USERNAME, it will be used.
 Otherwise the value 'guest' will be used.
 
 If a pulse password is specified on the command line, it will be used.
-Otherwise, if the provided AMQP server url provided contains a password, it will be used.
+Otherwise, if the AMQP server url is provided and contains a password, it will be used.
 Otherwise, if a value is set in the environment variable PULSE_PASSWORD, it will be used.
 Otherwise the value 'guest' will be used.
-
-If no AMQP server is specified, production will be used (amqps://pulse.mozilla.org:5671).
 
   Usage:
       pulse-go [-u <pulse_user>] [-p <pulse_password>] [-s <amqp_server_url>] (<exchange> <routing_key>)...
