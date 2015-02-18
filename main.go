@@ -1,3 +1,10 @@
+// pulse-go is a command line tool for listening to events from pulse.mozilla.org. It
+// allows you to selectively bind to different exchanges and routing keys, and output
+// the received messages to standard out. Run pulse-go -h for more information about
+// command line arguments.
+// It relies heavily on the pulse go library: "github.com/petemoore/pulse-go/pulse",
+// which is a general purpose library for interacting with pulse exchanges in the go
+// language.
 package main
 
 import (
