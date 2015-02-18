@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	reUsername string = "^.*://([^:@/]*)[:@].*$"
-	rePassword string = "^.*://[^:@/]*:([^@/]*)@.*$"
+	reUsername string = "^.*://([^:@/]*)(:[^/]*@|@).*$"
+	rePassword string = "^.*://[^:@/]*:([^@]*)@.*$"
 )
 
 func failOnError(err error, msg string) {
