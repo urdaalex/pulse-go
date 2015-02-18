@@ -9,11 +9,6 @@ import (
 	"regexp"
 )
 
-const (
-	reUsername string = "^.*://([^:@/]*)(:[^/]*@|@).*$"
-	rePassword string = "^.*://[^:@/]*:([^@]*)@.*$"
-)
-
 func failOnError(err error, msg string) {
 	if err != nil {
 		log.Fatalf("%s: %s", msg, err)
@@ -35,14 +30,9 @@ type connection struct {
 	closedAlert chan amqp.Error
 }
 
-func (c *connection) SetURL(url string) {
-	c.URL = url
-}
-
 func match(regex, text string) string {
 	if matched, _ := regexp.MatchString(regex, text); matched {
-		re := regexp.MustCompile(regex)
-		return re.ReplaceAllString(text, "$1")
+		return regexp.MustCompile(regex).ReplaceAllString(text, "$1")
 	}
 	return ""
 }
@@ -58,10 +48,12 @@ func NewConnection(pulseUser string, pulsePassword string, amqpUrl string) conne
 		amqpUrl = "amqps://pulse.mozilla.org:5671"
 	}
 	if pulseUser == "" {
-		pulseUser = match(reUsername, amqpUrl)
+		// Regular expression to pull out username from amqp url
+		pulseUser = match("^.*://([^:@/]*)(:[^@]*@|@).*$", amqpUrl)
 	}
 	if pulsePassword == "" {
-		pulsePassword = match(rePassword, amqpUrl)
+		// Regular expression to pull out password from amqp url
+		pulsePassword = match("^.*://[^:@/]*:([^@]*)@.*$", amqpUrl)
 	}
 	if pulseUser == "" {
 		pulseUser = os.Getenv("PULSE_USERNAME")
@@ -75,10 +67,9 @@ func NewConnection(pulseUser string, pulsePassword string, amqpUrl string) conne
 	if pulsePassword == "" {
 		pulsePassword = "guest"
 	}
-	// now substitute in real username and password into url...
 
-	re := regexp.MustCompile("^(.*://)([^@/]*@|)([^@]*)(/.*|$)")
-	amqpUrl = re.ReplaceAllString(amqpUrl, "${1}"+pulseUser+":"+pulsePassword+"@${3}${4}")
+	// now substitute in real username and password into url...
+	amqpUrl = regexp.MustCompile("^(.*://)([^@/]*@|)([^@]*)(/.*|$)").ReplaceAllString(amqpUrl, "${1}"+pulseUser+":"+pulsePassword+"@${3}${4}")
 
 	return connection{
 		User:     pulseUser,
@@ -91,36 +82,38 @@ func (c *connection) connect() {
 	c.AMQPConn, err = amqp.Dial(c.URL)
 	failOnError(err, "Failed to connect to RabbitMQ")
 	c.connected = true
-	// reconnect if drops
-	// TODO: need to think through this logic
-	// c.closedAlert = make(chan amqp.Error)
-	// c.AMQPConn.NotifyClose(closedAlert)
-	// go func(ch chan amqp.Error) {
-	// 	for {
-	// 		<-ch
-	// 		connect()
-	// 	}
-	// }(c.closedAlert)
 }
 
+// Binding interface allows you to create custom types to describe exchange / routing key
+// combinations, for example Binding types are generated in Task Cluster go client to
+// avoid a library user referencing a non existent exchange, or an invalid routing key.
 type Binding interface {
 	RoutingKey() string
 	ExchangeName() string
 }
 
+// Convenience private (unexported) type for binding a routing key/exchange
+// to a queue using plain strings for describing the exchange and routing key
 type simpleBinding struct {
 	rk string
 	en string
 }
 
+// Convenience function for returning a Binding for the given routing key and exchange
+// strings, which can be passed to the Consume method of *connection.
+// Typically this is used if you wish to refer to exchanges and routing keys with
+// explicit strings, rather than generated types (e.g. Task Cluster go client
+// generates custom types to avoid invalid exchange names or invalid routing keys).
 func Bind(routingKey, exchangeName string) *simpleBinding {
 	return &simpleBinding{rk: routingKey, en: exchangeName}
 }
 
+// simpleBindings blindly return the routing key they were passed without validation
 func (s simpleBinding) RoutingKey() string {
 	return s.rk
 }
 
+// simpleBindings blindly return the exchange name they were passed without validation
 func (s simpleBinding) ExchangeName() string {
 	return s.en
 }
@@ -209,14 +202,18 @@ func (c *connection) Consume(
 	return pulseQueue{}
 }
 
+// TODO: not yet implemented
 func (pq *pulseQueue) Pause() {
 }
 
+// TODO: not yet implemented
 func (pq *pulseQueue) Delete() {
 }
 
+// TODO: not yet implemented
 func (pq *pulseQueue) Resume() {
 }
 
+// TODO: not yet implemented
 func (pq *pulseQueue) Close() {
 }
