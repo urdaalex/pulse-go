@@ -10,9 +10,7 @@ This project contains two go packages:
 
 This is a command line interface for consuming mozilla pulse messages, written in go.
 
-The go documentation is available at http://godoc.org/github.com/petemoore/pulse-go
-
-To get help, call pulse-go with --help option:
+The best way to see how to use this command line tool, is to run it with the --help option:
 
 ```
 pmoore@home:~ $ pulse-go --help
