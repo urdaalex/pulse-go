@@ -1,13 +1,15 @@
-// Package pulse provides operations for interacting with
-// https://pulse.mozilla.org/.  Currently it supports consuming messages, not
-// publishing messages. Please note publishing messages is entirely possible
-// using package "github.com/streadway/amqp" directly, and indeed this pulse
-// library is built on top of the amqp package. If a user so wishes, they can
-// also consume pulse messages programming directly with the amqp package too.
-// However, for a user that is simply interesting in processing pulse messages
-// without wishing to acquire a detailed understanding of how pulse.mozilla.org
-// has been designed, or how AMQP 0.9.1 works, this client provides basic
-// utility methods to get you started off quickly.
+// Package pulse provides operations for consuming mozilla pulse messages (see
+// https://pulse.mozilla.org/).
+//
+// For users that are interested in publishing messages, or having lower level
+// control of the amqp interactions with pulse, take a look at
+// http://godoc.org/github.com/streadway/amqp.  This library is built on top of
+// the amqp package.
+//
+// For a user that is simply interesting in consuming pulse messages without
+// wishing to acquire a detailed understanding of how pulse.mozilla.org has
+// been designed, or how AMQP 0.9.1 works, this client provides basic utility
+// methods to get you started off quickly.
 //
 // Please note that parent package "github.com/petemoore/pulse-go" provides a
 // very simple command line interface into this library too, which can be
