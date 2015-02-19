@@ -76,7 +76,7 @@ pmoore@home:~ $
 This is a pulse client library, written in go.
 
 The full API documentation is available at http://godoc.org/github.com/petemoore/pulse-go/pulse
-including an explanation of the following example in the package overview.
+including a full explanation of the following walkthrough example:
 
 ```
 package main
