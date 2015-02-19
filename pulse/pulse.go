@@ -71,11 +71,7 @@ func match(regex, text string) string {
 //
 // Finally, the AMQP url is adjusted, by stripping out any user/password
 // contained inside it, and then embedding the derived username and password
-// above. Please note from a security perspective, even though the internal
-// struct variable amqpUrl now contains the password, this variable is not
-// exported, and is not logged by this library. This means it is not possible
-// for a client program to accidentally get a handle on the password and print
-// it out in a log file, for example.
+// above.
 //
 // Typically, a call to this method would look like:
 //
@@ -111,8 +107,6 @@ func NewConnection(pulseUser string, pulsePassword string, amqpUrl string) Conne
 
 	// now substitute in real username and password into url...
 	amqpUrl = regexp.MustCompile("^(.*://)([^@/]*@|)([^@]*)(/.*|$)").ReplaceAllString(amqpUrl, "${1}"+pulseUser+":"+pulsePassword+"@${3}${4}")
-
-	fmt.Println(pulseUser, pulsePassword, amqpUrl)
 
 	return Connection{
 		User:     pulseUser,
