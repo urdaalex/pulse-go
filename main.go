@@ -76,7 +76,7 @@ Otherwise the value 'guest' will be used.
 func main() {
 	// Parse the docopt string and exit on any error or help message.
 	arguments, err := docopt.Parse(usage, nil, true, version, false, true)
-	pulse.FailOnError(err)
+	pulse.FailOnError(err, "Not able to parse command line arguments")
 
 	amqpUrl := ""
 	pulseUser := ""
@@ -109,14 +109,13 @@ func main() {
 		fmt.Println(string(d.Body))
 		// only ack after printing message to standard out
 		err := d.Ack(false)
-		pulse.FailOnError(err)
+		pulse.FailOnError(err, "Not able to ack pulse message")
 	}
 
-	q1 := p1.Consume(
+	p1.Consume(
 		"",      // queue name ("" implies uuid should be generated)
 		printMe, // callback function to call with each AMQP delivery...
 		1,       // prefetch
-		1,       // max length (not yet used)
 		false,   // autoAck - we want to acknowledge ourselves
 		bindings...)
 
