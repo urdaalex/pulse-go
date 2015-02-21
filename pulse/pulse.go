@@ -2,6 +2,7 @@ package pulse
 
 import (
 	"code.google.com/p/go-uuid/uuid"
+	"encoding/json"
 	"fmt"
 	"github.com/streadway/amqp"
 	"log"
@@ -135,15 +136,17 @@ type Binding interface {
 	// This should return the fully qualified name of the pulse exchange to
 	// bind messages from
 	ExchangeName() string
+
+	// This should return a pointer to a type where the body of the payload
+	// can be unmarshaled
+	PayloadObject() interface{}
 }
 
 // Convenience private (unexported) type for binding a routing key/exchange
 // to a queue using plain strings for describing the exchange and routing key
 type simpleBinding struct {
-
 	// copy of the static routing key
 	rk string
-
 	// copy of the static fully qualified exchange name
 	en string
 }
@@ -170,6 +173,12 @@ func (s simpleBinding) ExchangeName() string {
 	return s.en
 }
 
+// we unmarshal into an interface{} since we don't know anything about the
+// json payload
+func (s simpleBinding) PayloadObject() interface{} {
+	return new(interface{})
+}
+
 // Consume is at the heart of the pulse library. After creating a connection
 // with pulse.NewConnection(...) above, you can call the Consume method to
 // register a queue, set a callback function to be called with each message
@@ -189,7 +198,7 @@ func (s simpleBinding) ExchangeName() string {
 // wish pulse to copy to your queue.
 func (c *Connection) Consume(
 	queueName string,
-	callback func(amqp.Delivery),
+	callback func(interface{}, amqp.Delivery),
 	prefetch int,
 	autoAck bool,
 	bindings ...Binding) PulseQueue {
@@ -200,6 +209,12 @@ func (c *Connection) Consume(
 
 	ch, err := c.AMQPConn.Channel()
 	FailOnError(err, "Failed to open a channel")
+
+	// keep a map from exchange name to exchange object, so later we can
+	// unmarshal pulse messages into correct object from the exchange name
+	// in the amqp.Delivery object to get back to Binding, and thus to
+	// Binding.PayloadObject()
+	bindingLookup := make(map[string]Binding, len(bindings))
 
 	for i := range bindings {
 		err = ch.ExchangeDeclarePassive(
@@ -212,6 +227,8 @@ func (c *Connection) Consume(
 			nil,                        // arguments
 		)
 		FailOnError(err, "Failed to passively declare exchange "+bindings[i].ExchangeName())
+		// bookkeeping...
+		bindingLookup[bindings[i].ExchangeName()] = bindings[i]
 	}
 
 	var q amqp.Queue
@@ -262,8 +279,11 @@ func (c *Connection) Consume(
 
 	go func() {
 		for i := range eventsChan {
-			// fmt.Println(string(i.Body))
-			callback(i)
+			payload := i.Body
+			payloadObject := bindingLookup[i.Exchange].PayloadObject()
+			err := json.Unmarshal(payload, payloadObject)
+			FailOnError(err, fmt.Sprintf("Unable to unmarshal json payload into object:\nPayload:\n%v\nObject: %T\n", string(payload), payloadObject))
+			callback(payloadObject, i)
 		}
 		fmt.Println("Seem to have exited events loop?!!!")
 	}()

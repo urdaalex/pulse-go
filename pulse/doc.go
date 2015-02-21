@@ -17,10 +17,14 @@
 // programming expertise, and can directly write e.g. shell scripts that
 // process pulse messages.
 //
-// To get started, let's create an example go program which uses this library.
-// Afterwards we will see how it works. Do not worry if none of it makes sense
-// now. By the end of this overview it will all be explained.
+// To get started, we have created an example program which uses this library.
+// The source code for this example is available at
+// https://github.com/petemoore/pulse-go/blob/master/pulsesniffer/pulsesniffer.go.
+// Afterwards, we will describe how it works. Do not worry if none of it makes
+// sense now.  By the end of this overview it will all be explained.
 //
+//  // Package pulsesniffer provides a simple example program that listens to some
+//  // real world pulse messages.
 //  package main
 //
 //  import (
@@ -37,7 +41,7 @@
 //  	conn := pulse.NewConnection("", "", "")
 //  	conn.Consume(
 //  		"taskprocessing", // queue name
-//  		func(delivery amqp.Delivery) { // callback function to pass messages to
+//  		func(message interface{}, delivery amqp.Delivery) { // callback function to pass messages to
 //  			fmt.Println("Received from exchange " + delivery.Exchange + ":")
 //  			fmt.Println(string(delivery.Body))
 //  			fmt.Println("")
@@ -51,10 +55,9 @@
 //  		pulse.Bind( // another routing key and exchange to get messages from
 //  			"*.*.*.*.*.aws-provisioner.#",
 //  			"exchange/taskcluster-queue/v1/task-running"))
-//
 //  	conn.Consume( // a second workflow to manage concurrently
 //  		"", // empty name implies anonymous queue
-//  		func(delivery amqp.Delivery) { // simpler callback than before
+//  		func(message interface{}, delivery amqp.Delivery) { // simpler callback than before
 //  			fmt.Println("Buildbot message received")
 //  			fmt.Println("")
 //  		},
@@ -63,7 +66,6 @@
 //  		pulse.Bind( // routing key and exchange to get messages from
 //  			"#", // get *all* normalized buildbot messages
 //  			"exchange/build/normalized"))
-//
 //  	// wait forever
 //  	forever := make(chan bool)
 //  	<-forever
@@ -180,16 +182,38 @@
 // simply need to have a function that accepts an amqp.Delivery input, and pass
 // it into the Consume method. Above, we did it like this:
 //
-//  		func(delivery amqp.Delivery) { // callback function to pass messages to
+//  		func(message interface{}, delivery amqp.Delivery) { // callback function to pass messages to
 //  			fmt.Println("Received from exchange " + delivery.Exchange + ":")
 //  			fmt.Println(string(delivery.Body))
 //  			fmt.Println("")
 //  			delivery.Ack(false) // acknowledge message *after* processing
 //  		},
 //
-// Please see http://godoc.org/github.com/streadway/amqp#Delivery for more
-// information on the Delivery type. Most of the time, delivery.Body is all that
-// you need, since this contains the pulse message body.
+// The two parameters of the callback function we have created are the message
+// object, and the delivery object. The message object is the pulse message,
+// but unmarshaled into an interface{}. Since the pulse messages are all json
+// messages, the pulse library unmarshals it and give you back a go object with
+// its contents. Please note if you require that the json is unmarshaled into
+// something more specific than interface{}, such as a custom class, this is
+// possible, and will be explained in the next paragraph.  The other parameter,
+// the delivery object, is an underlying amqp library type, which gives you
+// access to some meta data for the message.  Please see
+// http://godoc.org/github.com/streadway/amqp#Delivery for more information.
+// Among other things, it provides you with delivery.Body, which is the raw
+// json of the message. You can therefore choose if you want to process the raw
+// json or the unmarshaled json in your callback method.
+//
+// You recall above that to describe the binding from an exchange to a queue
+// with a given routing key, we specified pulse.Bind(routingKey, exchange) as a
+// parameter of the Consume method. pulse.Bind(...) returns an object of type
+// Binding, where Binding is an interface. If you wish to unmarshal your json
+// into something other than an interface{}, take a look at the Binding
+// interface documentation. Instead of calling pulse.Bind(...) you can provide
+// your own Binding interface implementation which can enable custom handling
+// of exchange names, routing keys, and unmarshaling of objects. The
+// taskcluster go client relies heavily on this, for example. See
+// https://github.com/petemoore/taskcluster-client-go/tree/master/tctasksniffer/sniffer.go
+// for inspiration.
 //
 // In this example above, we simply output the information we receive, and then
 // acknowledge receipt of the message. But why do we need to do this? To explain,

@@ -105,7 +105,7 @@ func main() {
 	// If not connecting to production, you can specify a different url...
 
 	// Simple example callback function to just print message body...
-	printMe := func(d amqp.Delivery) {
+	printMe := func(message interface{}, d amqp.Delivery) {
 		fmt.Println(string(d.Body))
 		// only ack after printing message to standard out
 		err := d.Ack(false)

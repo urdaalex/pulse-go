@@ -4,9 +4,9 @@
 
 A go (golang) library for consuming mozilla pulse messages (http://pulse.mozilla.org/).
 
-This project contains two go packages:
+## This project contains three go packages:
 
-# package "github.com/petemoore/pulse-go"
+# Package 1: "github.com/petemoore/pulse-go"
 
 This is a command line interface for consuming mozilla pulse messages, written in go.
 
@@ -69,20 +69,27 @@ Otherwise the value 'guest' will be used.
 pmoore@home:~ $ 
 ```
 
-# package "github.com/petemoore/pulse-go/pulse"
+# Package 2: "github.com/petemoore/pulse-go/pulse"
 
 This is a pulse client library, written in go.
 
 The full API documentation is available at http://godoc.org/github.com/petemoore/pulse-go/pulse
-including a full explanation of the following walkthrough example:
+
+# Package 3: "github.com/petemoore/pulse-go/pulsesniffer"
+
+This package contains the following *example* program, which uses the pulse library (package 2 above).
 
 ```
+// Package pulsesniffer provides a simple example program that listens to some
+// real world pulse messages.
 package main
+
 import (
 	"fmt"
 	"github.com/petemoore/pulse-go/pulse"
 	"github.com/streadway/amqp"
 )
+
 func main() {
 	// Passing all empty strings:
 	// empty user => use PULSE_USERNAME env var
@@ -91,7 +98,7 @@ func main() {
 	conn := pulse.NewConnection("", "", "")
 	conn.Consume(
 		"taskprocessing", // queue name
-		func(delivery amqp.Delivery) { // callback function to pass messages to
+		func(message interface{}, delivery amqp.Delivery) { // callback function to pass messages to
 			fmt.Println("Received from exchange " + delivery.Exchange + ":")
 			fmt.Println(string(delivery.Body))
 			fmt.Println("")
@@ -107,7 +114,7 @@ func main() {
 			"exchange/taskcluster-queue/v1/task-running"))
 	conn.Consume( // a second workflow to manage concurrently
 		"", // empty name implies anonymous queue
-		func(delivery amqp.Delivery) { // simpler callback than before
+		func(message interface{}, delivery amqp.Delivery) { // simpler callback than before
 			fmt.Println("Buildbot message received")
 			fmt.Println("")
 		},
