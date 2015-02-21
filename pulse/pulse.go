@@ -137,9 +137,9 @@ type Binding interface {
 	// bind messages from
 	ExchangeName() string
 
-	// This should return a pointer to a type where the body of the payload
-	// can be unmarshaled
-	PayloadObject() interface{}
+	// This should return a pointer to a new object for unmarshaling matching
+	// pulse messages into
+	NewPayloadObject() interface{}
 }
 
 // Convenience private (unexported) type for binding a routing key/exchange
@@ -175,7 +175,7 @@ func (s simpleBinding) ExchangeName() string {
 
 // we unmarshal into an interface{} since we don't know anything about the
 // json payload
-func (s simpleBinding) PayloadObject() interface{} {
+func (s simpleBinding) NewPayloadObject() interface{} {
 	return new(interface{})
 }
 
@@ -213,7 +213,7 @@ func (c *Connection) Consume(
 	// keep a map from exchange name to exchange object, so later we can
 	// unmarshal pulse messages into correct object from the exchange name
 	// in the amqp.Delivery object to get back to Binding, and thus to
-	// Binding.PayloadObject()
+	// Binding.NewPayloadObject()
 	bindingLookup := make(map[string]Binding, len(bindings))
 
 	for i := range bindings {
@@ -280,7 +280,7 @@ func (c *Connection) Consume(
 	go func() {
 		for i := range eventsChan {
 			payload := i.Body
-			payloadObject := bindingLookup[i.Exchange].PayloadObject()
+			payloadObject := bindingLookup[i.Exchange].NewPayloadObject()
 			err := json.Unmarshal(payload, payloadObject)
 			FailOnError(err, fmt.Sprintf("Unable to unmarshal json payload into object:\nPayload:\n%v\nObject: %T\n", string(payload), payloadObject))
 			callback(payloadObject, i)

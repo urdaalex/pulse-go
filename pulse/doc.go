@@ -205,13 +205,14 @@
 //
 // You recall above that to describe the binding from an exchange to a queue
 // with a given routing key, we specified pulse.Bind(routingKey, exchange) as a
-// parameter of the Consume method. pulse.Bind(...) returns an object of type
-// Binding, where Binding is an interface. If you wish to unmarshal your json
-// into something other than an interface{}, take a look at the Binding
-// interface documentation. Instead of calling pulse.Bind(...) you can provide
-// your own Binding interface implementation which can enable custom handling
-// of exchange names, routing keys, and unmarshaling of objects. The
-// taskcluster go client relies heavily on this, for example. See
+// parameter of the Consume method. pulse.Bind(...) returns an object of type ,
+// where http://godoc.org/github.com/petemoore/pulse-go/pulse#Binding is an
+// interface. If you wish to unmarshal your json into something other than an
+// interface{}, take a look at the Binding interface documentation. Instead of
+// calling pulse.Bind(...) you can provide your own Binding interface
+// implementation which can enable custom handling of exchange names, routing
+// keys, and unmarshaling of objects. The taskcluster go client relies heavily
+// on this, for example. See
 // https://github.com/petemoore/taskcluster-client-go/tree/master/tctasksniffer/sniffer.go
 // for inspiration.
 //
