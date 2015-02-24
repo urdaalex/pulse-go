@@ -1,6 +1,7 @@
 # pulse-go
 <img hspace="20" align="left" src="https://tools.taskcluster.net/lib/assets/taskcluster-120.png" />
 [![Build Status](https://secure.travis-ci.org/petemoore/pulse-go.png)](http://travis-ci.org/petemoore/pulse-go)
+[![GoDoc](https://godoc.org/github.com/petemoore/pulse-go?status.png)](https://godoc.org/github.com/petemoore/pulse-go)
 
 A go (golang) library for consuming mozilla pulse messages (http://pulse.mozilla.org/).
 
