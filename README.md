@@ -79,7 +79,7 @@ The full API documentation is available at http://godoc.org/github.com/petemoore
 
 This package contains the following *example* program, which uses the pulse library (package 2 above).
 
-```
+```golang
 // Package pulsesniffer provides a simple example program that listens to some
 // real world pulse messages.
 package main
