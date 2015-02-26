@@ -3,6 +3,7 @@ package pulse
 import (
 	"code.google.com/p/go-uuid/uuid"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/streadway/amqp"
 	"log"
@@ -280,12 +281,16 @@ func (c *Connection) Consume(
 	go func() {
 		for i := range eventsChan {
 			payload := i.Body
-			payloadObject := bindingLookup[i.Exchange].NewPayloadObject()
+			binding, ok := bindingLookup[i.Exchange]
+			if !ok {
+				panic(errors.New(fmt.Sprintf("ERROR: Message received for an unknown exchange '%v' - not sure how to process", i.Exchange)))
+			}
+			payloadObject := binding.NewPayloadObject()
 			err := json.Unmarshal(payload, payloadObject)
 			FailOnError(err, fmt.Sprintf("Unable to unmarshal json payload into object:\nPayload:\n%v\nObject: %T\n", string(payload), payloadObject))
 			callback(payloadObject, i)
 		}
-		fmt.Println("Seem to have exited events loop?!!!")
+		fmt.Println("AMQP channel closed - has the connection dropped?")
 	}()
 	return PulseQueue{}
 }
