@@ -60,7 +60,7 @@ Otherwise the value 'guest' will be used.
     Please note if you are interacting with taskcluster exchanges, please consider using one
     of the following libraries, for better handling:
 
-      * https://github.com/petemoore/taskcluster-client-go
+      * https://github.com/taskcluster/taskcluster-client-go
       * https://github.com/taskcluster/taskcluster-client
 
     2) pulse-go -s amqps://admin:peanuts@localhost:5671 exchange/treeherder/v2/new-result-set '#'
