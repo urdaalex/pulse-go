@@ -12,6 +12,7 @@ import (
 	docopt "github.com/docopt/docopt-go"
 	"github.com/petemoore/pulse-go/pulse"
 	"github.com/streadway/amqp"
+	"log"
 )
 
 var (
@@ -76,7 +77,9 @@ Otherwise the value 'guest' will be used.
 func main() {
 	// Parse the docopt string and exit on any error or help message.
 	arguments, err := docopt.Parse(usage, nil, true, version, false, true)
-	pulse.FailOnError(err, "Not able to parse command line arguments")
+	if err != nil {
+		log.Fatalf("Not able to parse command line arguments. Received error:\n%v\n", err)
+	}
 
 	amqpUrl := ""
 	pulseUser := ""
@@ -109,15 +112,21 @@ func main() {
 		fmt.Println(string(d.Body))
 		// only ack after printing message to standard out
 		err := d.Ack(false)
-		pulse.FailOnError(err, "Not able to ack pulse message")
+		if err != nil {
+			log.Fatalf("Not able to ack pulse message:\n%v\n", err)
+		}
 	}
 
-	p1.Consume(
+	_, err = p1.Consume(
 		"",      // queue name ("" implies uuid should be generated)
 		printMe, // callback function to call with each AMQP delivery...
 		1,       // prefetch
 		false,   // autoAck - we want to acknowledge ourselves
 		bindings...)
+
+	if err != nil {
+		log.Fatalf("Not able to consume pulse messages from queue. Error occurred:\n%v\n", err)
+	}
 
 	// wait for a never-arriving message, to avoid exiting program
 	forever := make(chan bool)

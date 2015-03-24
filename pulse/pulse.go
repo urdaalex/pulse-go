@@ -14,11 +14,34 @@ import (
 // Utility method used for checking an error condition, and failing with a given
 // error message if the error is not nil. msg should contain a description of
 // what activity could not be performed as required.
-func FailOnError(err error, msg string) {
-	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-		panic(fmt.Sprintf("%s: %s", msg, err))
+func (err PulseError) Error() string {
+	msg := err.Message
+	lle := err.LowerLevelError
+	if msg != "" {
+		if lle != nil {
+			return fmt.Sprintf("%s: %s", msg, lle)
+		}
+		return fmt.Sprintf("%s", msg)
 	}
+	if lle != nil {
+		return fmt.Sprintf("Pulse library error occurred caused by:\n%s", lle)
+	}
+	return "Unknown Pulse Library error has occurred! No information available! :D"
+}
+
+// Utility function for generating a PulseError
+func Error(err error, msg string) PulseError {
+	return PulseError{
+		Message:         msg,
+		LowerLevelError: err,
+	}
+}
+
+// PulseError is used for describing problems that occurred when interacting
+// with Pulse, caused by a lower-level error
+type PulseError struct {
+	Message         string
+	LowerLevelError error
 }
 
 // PulseQueue manages an underlying AMQP queue, and provides methods for
@@ -118,11 +141,14 @@ func NewConnection(pulseUser string, pulsePassword string, amqpUrl string) Conne
 
 // connect is called internally, lazily, the first time Consume is called.
 // TODO: need to make sure this is properly synchronised.
-func (c *Connection) connect() {
+func (c *Connection) connect() error {
 	var err error
 	c.AMQPConn, err = amqp.Dial(c.URL)
-	FailOnError(err, "Failed to connect to RabbitMQ")
+	if err != nil {
+		return Error(err, "Failed to connect to RabbitMQ")
+	}
 	c.connected = true
+	return nil
 }
 
 // Binding interface allows you to create custom types to describe exchange /
@@ -202,14 +228,22 @@ func (c *Connection) Consume(
 	callback func(interface{}, amqp.Delivery),
 	prefetch int,
 	autoAck bool,
-	bindings ...Binding) PulseQueue {
+	bindings ...Binding,
+) (
+	PulseQueue,
+	error,
+) {
+	pulseQueue := PulseQueue{}
 
+	// TODO: this needs to be synchronised
 	if !c.connected {
 		c.connect()
 	}
 
 	ch, err := c.AMQPConn.Channel()
-	FailOnError(err, "Failed to open a channel")
+	if err != nil {
+		return pulseQueue, Error(err, "Failed to open a channel")
+	}
 
 	// keep a map from exchange name to exchange object, so later we can
 	// unmarshal pulse messages into correct object from the exchange name
@@ -227,7 +261,9 @@ func (c *Connection) Consume(
 			false,                      // no-wait
 			nil,                        // arguments
 		)
-		FailOnError(err, "Failed to passively declare exchange "+bindings[i].ExchangeName())
+		if err != nil {
+			return pulseQueue, Error(err, "Failed to passively declare exchange "+bindings[i].ExchangeName())
+		}
 		// bookkeeping...
 		bindingLookup[bindings[i].ExchangeName()] = bindings[i]
 	}
@@ -254,7 +290,9 @@ func (c *Connection) Consume(
 			nil,   // arguments
 		)
 	}
-	FailOnError(err, "Failed to declare queue")
+	if err != nil {
+		return pulseQueue, Error(err, "Failed to declare queue")
+	}
 
 	for i := range bindings {
 		log.Printf("Binding %s to %s with routing key %s", q.Name, bindings[i].ExchangeName(), bindings[i].RoutingKey())
@@ -264,7 +302,9 @@ func (c *Connection) Consume(
 			bindings[i].ExchangeName(), // exchange
 			false,
 			nil)
-		FailOnError(err, "Failed to bind a queue")
+		if err != nil {
+			return pulseQueue, Error(err, "Failed to bind a queue")
+		}
 	}
 
 	eventsChan, err := ch.Consume(
@@ -276,7 +316,9 @@ func (c *Connection) Consume(
 		false,   // no wait
 		nil,     // args
 	)
-	FailOnError(err, "Failed to register a consumer")
+	if err != nil {
+		return pulseQueue, Error(err, "Failed to register a consumer")
+	}
 
 	go func() {
 		for i := range eventsChan {
@@ -287,12 +329,14 @@ func (c *Connection) Consume(
 			}
 			payloadObject := binding.NewPayloadObject()
 			err := json.Unmarshal(payload, payloadObject)
-			FailOnError(err, fmt.Sprintf("Unable to unmarshal json payload into object:\nPayload:\n%v\nObject: %T\n", string(payload), payloadObject))
+			if err != nil {
+				fmt.Printf("Unable to unmarshal json payload into object:\nPayload:\n%v\nObject: %T\n", string(payload), payloadObject)
+			}
 			callback(payloadObject, i)
 		}
 		fmt.Println("AMQP channel closed - has the connection dropped?")
 	}()
-	return PulseQueue{}
+	return pulseQueue, nil
 }
 
 // TODO: not yet implemented
