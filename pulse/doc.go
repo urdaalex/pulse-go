@@ -11,7 +11,7 @@
 // been designed, or how AMQP 0.9.1 works, this client provides basic utility
 // methods to get you started off quickly.
 //
-// Please note that parent package "github.com/petemoore/pulse-go" provides a
+// Please note that parent package "github.com/taskcluster/pulse-go" provides a
 // very simple command line interface into this library too, which can be
 // called directly from a shell, for example, so that the user requires no go
 // programming expertise, and can directly write e.g. shell scripts that
@@ -19,7 +19,7 @@
 //
 // To get started, we have created an example program which uses this library.
 // The source code for this example is available at
-// https://github.com/petemoore/pulse-go/blob/master/pulsesniffer/pulsesniffer.go.
+// https://github.com/taskcluster/pulse-go/blob/master/pulsesniffer/pulsesniffer.go.
 // Afterwards, we will describe how it works. Do not worry if none of it makes
 // sense now.  By the end of this overview it will all be explained.
 //
@@ -29,7 +29,7 @@
 //
 //  import (
 //  	"fmt"
-//  	"github.com/petemoore/pulse-go/pulse"
+//  	"github.com/taskcluster/pulse-go/pulse"
 //  	"github.com/streadway/amqp"
 //  )
 //
@@ -209,7 +209,7 @@
 // object of type Binding, where Binding is an interface.  If you wish to
 // unmarshal your json into something other than an interface{}, take a look at
 // the Binding interface documentation
-// (http://godoc.org/github.com/petemoore/pulse-go/pulse#Binding). Instead of
+// (http://godoc.org/github.com/taskcluster/pulse-go/pulse#Binding). Instead of
 // calling pulse.Bind(routingKey, exchange) you can provide your own Binding
 // interface implementation which can enable custom handling of exchange names,
 // routing keys, and unmarshaling of objects. The taskcluster go client relies

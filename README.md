@@ -1,13 +1,13 @@
 # pulse-go
 <img hspace="20" align="left" src="https://tools.taskcluster.net/lib/assets/taskcluster-120.png" />
-[![Build Status](https://secure.travis-ci.org/petemoore/pulse-go.png)](http://travis-ci.org/petemoore/pulse-go)
-[![GoDoc](https://godoc.org/github.com/petemoore/pulse-go?status.png)](https://godoc.org/github.com/petemoore/pulse-go)
+[![Build Status](https://secure.travis-ci.org/taskcluster/pulse-go.png)](http://travis-ci.org/taskcluster/pulse-go)
+[![GoDoc](https://godoc.org/github.com/taskcluster/pulse-go?status.png)](https://godoc.org/github.com/taskcluster/pulse-go)
 
 A go (golang) library for consuming mozilla pulse messages (http://pulse.mozilla.org/).
 
 ## This project contains three go packages:
 
-# Package 1: "github.com/petemoore/pulse-go"
+# Package 1: "github.com/taskcluster/pulse-go"
 
 This is a command line interface for consuming mozilla pulse messages, written in go.
 
@@ -70,13 +70,13 @@ Otherwise the value 'guest' will be used.
 pmoore@home:~ $ 
 ```
 
-# Package 2: "github.com/petemoore/pulse-go/pulse"
+# Package 2: "github.com/taskcluster/pulse-go/pulse"
 
 This is a pulse client library, written in go.
 
-The full API documentation is available at http://godoc.org/github.com/petemoore/pulse-go/pulse
+The full API documentation is available at http://godoc.org/github.com/taskcluster/pulse-go/pulse
 
-# Package 3: "github.com/petemoore/pulse-go/pulsesniffer"
+# Package 3: "github.com/taskcluster/pulse-go/pulsesniffer"
 
 This package contains the following *example* program, which uses the pulse library (package 2 above).
 
@@ -87,7 +87,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/petemoore/pulse-go/pulse"
+	"github.com/taskcluster/pulse-go/pulse"
 	"github.com/streadway/amqp"
 )
 

@@ -4,8 +4,8 @@ package main
 
 import (
 	"fmt"
-	"github.com/petemoore/pulse-go/pulse"
 	"github.com/streadway/amqp"
+	"github.com/taskcluster/pulse-go/pulse"
 )
 
 func main() {

@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/petemoore/pulse-go/pulse"
+	"github.com/taskcluster/pulse-go/pulse"
 	"testing"
 )
 
