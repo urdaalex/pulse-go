@@ -1,14 +1,15 @@
 package pulse
 
 import (
-	"code.google.com/p/go-uuid/uuid"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/streadway/amqp"
 	"log"
 	"os"
 	"regexp"
+
+	"github.com/pborman/uuid"
+	"github.com/streadway/amqp"
 )
 
 // Utility method used for checking an error condition, and failing with a given

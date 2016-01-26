@@ -9,10 +9,11 @@ package main
 
 import (
 	"fmt"
+	"log"
+
 	docopt "github.com/docopt/docopt-go"
 	"github.com/streadway/amqp"
 	"github.com/taskcluster/pulse-go/pulse"
-	"log"
 )
 
 var (

@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/taskcluster/pulse-go/pulse"
 	"testing"
+
+	"github.com/taskcluster/pulse-go/pulse"
 )
 
 func TestConnectionURLDetermination(t *testing.T) {
