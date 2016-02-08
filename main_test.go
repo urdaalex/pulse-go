@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/taskcluster/pulse-go/pulse"
@@ -31,11 +32,20 @@ func TestUsernameDetermination(t *testing.T) {
 			t.Fail()
 		}
 	}
+	err := os.Setenv("PULSE_USERNAME", "")
+	if err != nil {
+		t.Fatalf("Could not unset env variable PULSE_PASSWORD")
+	}
 	testUser("amqps://pmoore_test1:donkey123@loc:4561/sdf/343", "pmoore_test1")
 	testUser("amqps://:@loc:4561/sdf/343", "guest")
 	testUser("amqps://@loc:4561/sdf/343", "guest")
 	testUser("amqps://loc:4561/sdf/343", "guest")
 	testUser("amqps://loc:4561/s@df/343", "loc")
+	err = os.Setenv("PULSE_USERNAME", "zog")
+	if err != nil {
+		t.Fatalf("Could not set env variable PULSE_USERNAME to 'zog'")
+	}
+	testUser("amqps://loc:4561/sdf/343", "zog")
 }
 
 func TestPasswordDetermination(t *testing.T) {
@@ -46,6 +56,10 @@ func TestPasswordDetermination(t *testing.T) {
 			t.Fail()
 		}
 	}
+	err := os.Setenv("PULSE_PASSWORD", "")
+	if err != nil {
+		t.Fatalf("Could not unset env variable PULSE_PASSWORD")
+	}
 	testPassword("amqps://pmoore_test1:donkey123@loc:4561/sdf/343", "donkey123")
 	testPassword("amqps://:@loc:4561/sdf/343", "guest")
 	testPassword("amqps://@loc:4561/sdf/343", "guest")
@@ -55,4 +69,9 @@ func TestPasswordDetermination(t *testing.T) {
 	testPassword("amqps://@:x@loc:4561/sdf/343", "guest")
 	testPassword("amqps://:x/@loc:4561/sdf/343", "x/")
 	testPassword("amqps://:@@loc:4561/sdf/343", "guest")
+	err = os.Setenv("PULSE_PASSWORD", "moobit")
+	if err != nil {
+		t.Fatalf("Could not set env variable PULSE_PASSWORD to 'moobit'")
+	}
+	testPassword("amqps://@:x@loc:4561/sdf/343", "moobit")
 }
