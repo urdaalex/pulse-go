@@ -106,15 +106,15 @@
 // matching criteria to define the ones you want. The matching process is
 // handled by routing keys, which will now be explained.
 //
-// Each message that arrives on an exchange has a "routing key" signature.  The
+// Each message that arrives on an exchange has a "routing key" signature. The
 // routing key comprises of several fields. For an example, see:
-// http://docs.taskcluster.net/queue/exchanges/#taskDefined.  The fields are
-// delimited by dots, and therefore the routing key of a message is represented
-// as a '.' delimited string.  In order to select the messages on an exchange
-// that you wish to receive, you specify a matching routing key.  For each
-// field of the routing key, you can either match against a specific value, or
-// match all entries with the '*' wildcard.  Above, we specified the following
-// routing key and exchange:
+// https://docs.taskcluster.net/reference/platform/queue/exchanges#taskDefined.
+// The fields are delimited by dots, and therefore the routing key of a message
+// is represented as a '.' delimited string. In order to select the messages
+// on an exchange that you wish to receive, you specify a matching routing key.
+// For each field of the routing key, you can either match against a specific
+// value, or match all entries with the '*' wildcard. Above, we specified the
+// following routing key and exchange:
 //
 //  		pulse.Bind( // routing key and exchange to get messages from
 //  		"*.*.*.*.*.*.gaia.#",

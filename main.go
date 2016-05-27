@@ -55,8 +55,9 @@ Otherwise the value 'guest' will be used.
 
     This would display all messages from exchange exchange/build/ and only messages from
     exchange/taskcluster-queue/v1/task-defined with provisionerId = "null-provisioner" and
-    workerType = "buildbot-try" (see http://docs.taskcluster.net/queue/exchanges/#taskDefined
-    for more information).
+	workerType = "buildbot-try" (see
+    https://docs.taskcluster.net/reference/platform/queue/exchanges#taskDefined for more
+    information).
 
     Remember to quote your routing key strings on the command line, so they are not
     interpreted by your shell!
