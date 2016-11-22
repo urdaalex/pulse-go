@@ -10,6 +10,8 @@ import (
 
 	"github.com/pborman/uuid"
 	"github.com/streadway/amqp"
+	tcclient "github.com/taskcluster/taskcluster-client-go"
+    "github.com/taskcluster/taskcluster-client-go/pulse"
 )
 
 // Utility method used for checking an error condition, and failing with a given
@@ -53,12 +55,14 @@ type PulseQueue struct {
 // Connection manages the underlying AMQP connection, and provides an interface
 // for performing further actions, such as creating a queue.
 type Connection struct {
+	Namespace	string
 	User        string
 	Password    string
 	URL         string
 	AMQPConn    *amqp.Connection
 	connected   bool
 	closedAlert chan amqp.Error
+	IsTaskclusterPulse bool
 }
 
 // match applies the regular expression regex to string text, and only replaces
@@ -106,7 +110,10 @@ func match(regex, text string) string {
 // whereby the client program would export PULSE_USERNAME and PULSE_PASSWORD
 // environment variables before calling the go program, and the empty url would
 // signify that the client should connect to the production instance.
-func NewConnection(pulseUser string, pulsePassword string, amqpUrl string) Connection {
+
+
+//TODO make options type as param instead? this constructor is telescoping like Kepler
+func NewConnection(pulseUser string, pulsePassword string, amqpUrl string, namespace string, isTaskclusterPulse bool) Connection {
 	if amqpUrl == "" {
 		amqpUrl = "amqps://pulse.mozilla.org:5671"
 	}
@@ -130,14 +137,43 @@ func NewConnection(pulseUser string, pulsePassword string, amqpUrl string) Conne
 	if pulsePassword == "" {
 		pulsePassword = "guest"
 	}
+	if namespace == "" {
+		//namespace gets defaulted to username if not provided
+		namespace = pulseUser
+	}
+
+	if isTaskclusterPulse{
+		creds := &tcclient.Credentials{
+			ClientID:    "What Do I Put Here??",//TODO
+			AccessToken: "What Do I Put Here??",
+		}
+		
+		myPulse := pulse.New(creds)  
+		//myPulse.Authenticate = false //TODO: question: should auth be disabled???  
+    	
+		//get taskcluster-pulse credentials
+		tcCreds, err := myPulse.Namespace(namespace, &pulse.NamespaceCreationRequest{/*TODO fill inside*/})
+		
+		if err != nil {
+			return Error(err, "Failed to get credentials from taskcluster-pulse")
+		}
+
+		//update new credentials
+		namespace = tcCreds.namespace
+		pulseUser = tcCreds.username
+		pulsePassword = tcCreds.password
+	}
 
 	// now substitute in real username and password into url...
 	amqpUrl = regexp.MustCompile("^(.*://)([^@/]*@|)([^@]*)(/.*|$)").ReplaceAllString(amqpUrl, "${1}"+pulseUser+":"+pulsePassword+"@${3}${4}")
 
 	return Connection{
-		User:     pulseUser,
-		Password: pulsePassword,
-		URL:      amqpUrl}
+		Namespace:	namespace,
+		User:     	pulseUser,
+		Password: 	pulsePassword,
+		URL:      	amqpUrl,
+		IsTaskclusterPulse: isTaskclusterPulse
+		}
 }
 
 // connect is called internally, lazily, the first time Consume is called.
@@ -270,9 +306,19 @@ func (c *Connection) Consume(
 	}
 
 	var q amqp.Queue
+	var queuePrefix
+
+	//Prefix required by Pulse security model
+	if c.IsTaskclusterPulse{
+		queuePrefix = "taskcluster/"
+	}
+	else{
+		queuePrefix	= "queue/"
+	}
+
 	if queueName == "" {
 		q, err = ch.QueueDeclare(
-			"queue/"+c.User+"/"+uuid.New(), // name
+			queuePrefix+c.Namespace+"/"+uuid.New(), // name
 			false, // durable
 			// unnamed queues get deleted when disconnected
 			true, // delete when usused
@@ -283,7 +329,7 @@ func (c *Connection) Consume(
 		)
 	} else {
 		q, err = ch.QueueDeclare(
-			"queue/"+c.User+"/"+queueName, // name
+			queuePrefix+c.Namespace+"/"+queueName, // name
 			false, // durable
 			false, // delete when usused
 			false, // exclusive
