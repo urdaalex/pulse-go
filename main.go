@@ -106,7 +106,7 @@ func main() {
 		bindings[i] = pulse.Bind(routingKeys[i], exchanges[i])
 	}
 
-	p1 := pulse.NewConnection(pulseUser, pulsePassword, amqpUrl)
+	p1 := pulse.NewConnection(pulseUser, pulsePassword, amqpUrl, "")
 	// If not connecting to production, you can specify a different url...
 
 	// Simple example callback function to just print message body...

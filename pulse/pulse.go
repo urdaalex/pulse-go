@@ -56,6 +56,7 @@ type Connection struct {
 	User        string
 	Password    string
 	URL         string
+	QueuePrefix	string
 	AMQPConn    *amqp.Connection
 	connected   bool
 	closedAlert chan amqp.Error
@@ -81,6 +82,13 @@ func match(regex, text string) string {
 // AMQP URL.  Otherwise, production will be used
 // ("amqps://pulse.mozilla.org:5671")
 //
+// The logic for deriving the queue prefix is as follows:
+//
+// If the provided queuePrefix is a non-empty string, it will be used to set
+// the prefix of queues created by this library. queuePrefix must end with  
+// a slash '/'. Otherwise, if queuePrefix is an empty string, the value 
+// "queue/" will be used. 
+//
 // The pulse user is determined as follows:
 //
 // If the provided pulseUser is a non-empty string, it will be used for AMQP
@@ -101,14 +109,17 @@ func match(regex, text string) string {
 //
 // Typically, a call to this method would look like:
 //
-//  	conn := pulse.NewConnection("", "", "")
+//  	conn := pulse.NewConnection("", "", "", "")
 //
 // whereby the client program would export PULSE_USERNAME and PULSE_PASSWORD
 // environment variables before calling the go program, and the empty url would
 // signify that the client should connect to the production instance.
-func NewConnection(pulseUser string, pulsePassword string, amqpUrl string) Connection {
+func NewConnection(pulseUser string, pulsePassword string, amqpUrl string, queuePrefix string) Connection {
 	if amqpUrl == "" {
 		amqpUrl = "amqps://pulse.mozilla.org:5671"
+	}
+	if queuePrefix == ""{
+		queuePrefix = "/queue"
 	}
 	if pulseUser == "" {
 		// Regular expression to pull out username from amqp url
@@ -137,7 +148,8 @@ func NewConnection(pulseUser string, pulsePassword string, amqpUrl string) Conne
 	return Connection{
 		User:     pulseUser,
 		Password: pulsePassword,
-		URL:      amqpUrl}
+		URL:      amqpUrl,
+		queuePrefix: queuePrefix}
 }
 
 // connect is called internally, lazily, the first time Consume is called.
@@ -272,7 +284,7 @@ func (c *Connection) Consume(
 	var q amqp.Queue
 	if queueName == "" {
 		q, err = ch.QueueDeclare(
-			"queue/"+c.User+"/"+uuid.New(), // name
+			c.queuePrefix+c.User+"/"+uuid.New(), // name
 			false, // durable
 			// unnamed queues get deleted when disconnected
 			true, // delete when usused
@@ -283,7 +295,7 @@ func (c *Connection) Consume(
 		)
 	} else {
 		q, err = ch.QueueDeclare(
-			"queue/"+c.User+"/"+queueName, // name
+			c.queuePrefix+c.User+"/"+queueName, // name
 			false, // durable
 			false, // delete when usused
 			false, // exclusive
