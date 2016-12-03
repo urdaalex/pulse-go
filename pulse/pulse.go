@@ -56,9 +56,17 @@ type Connection struct {
 	User        string
 	Password    string
 	URL         string
+	Namespace	string
 	AMQPConn    *amqp.Connection
 	connected   bool
 	closedAlert chan amqp.Error
+}
+
+type NewConnectionOptions struct {
+	PulseUser       string
+	PulsePassword   string
+	AMQPUrl	        string
+	Namespace		string	
 }
 
 // match applies the regular expression regex to string text, and only replaces
@@ -106,38 +114,42 @@ func match(regex, text string) string {
 // whereby the client program would export PULSE_USERNAME and PULSE_PASSWORD
 // environment variables before calling the go program, and the empty url would
 // signify that the client should connect to the production instance.
-func NewConnection(pulseUser string, pulsePassword string, amqpUrl string) Connection {
-	if amqpUrl == "" {
-		amqpUrl = "amqps://pulse.mozilla.org:5671"
+func NewConnection(options NewConnectionOptions) Connection {
+	if options.AMQPUrl == "" {
+		options.AMQPUrl = "amqps://pulse.mozilla.org:5671"
 	}
-	if pulseUser == "" {
+	if options.PulseUser == "" {
 		// Regular expression to pull out username from amqp url
-		pulseUser = match("^.*://([^:@/]*)(:[^@]*@|@).*$", amqpUrl)
+		options.PulseUser = match("^.*://([^:@/]*)(:[^@]*@|@).*$", options.AMQPUrl)
 	}
-	if pulsePassword == "" {
+	if options.PulsePassword == "" {
 		// Regular expression to pull out password from amqp url
-		pulsePassword = match("^.*://[^:@/]*:([^@]*)@.*$", amqpUrl)
+		options.PulsePassword = match("^.*://[^:@/]*:([^@]*)@.*$", options.AMQPUrl)
 	}
-	if pulseUser == "" {
-		pulseUser = os.Getenv("PULSE_USERNAME")
+	if options.PulseUser == "" {
+		options.PulseUser = os.Getenv("PULSE_USERNAME")
 	}
-	if pulsePassword == "" {
-		pulsePassword = os.Getenv("PULSE_PASSWORD")
+	if options.PulsePassword == "" {
+		options.PulsePassword = os.Getenv("PULSE_PASSWORD")
 	}
-	if pulseUser == "" {
-		pulseUser = "guest"
+	if options.PulseUser == "" {
+		options.PulseUser = "guest"
 	}
-	if pulsePassword == "" {
-		pulsePassword = "guest"
+	if options.PulsePassword == "" {
+		options.PulsePassword = "guest"
+	}
+	if options.Namespace=="" {
+		options.Namespace="queue/"+options.PulseUser
 	}
 
 	// now substitute in real username and password into url...
-	amqpUrl = regexp.MustCompile("^(.*://)([^@/]*@|)([^@]*)(/.*|$)").ReplaceAllString(amqpUrl, "${1}"+pulseUser+":"+pulsePassword+"@${3}${4}")
+	options.AMQPUrl = regexp.MustCompile("^(.*://)([^@/]*@|)([^@]*)(/.*|$)").ReplaceAllString(options.AMQPUrl, "${1}"+options.PulseUser+":"+options.PulsePassword+"@${3}${4}")
 
 	return Connection{
-		User:     pulseUser,
-		Password: pulsePassword,
-		URL:      amqpUrl}
+		User:     options.PulseUser,
+		Password: options.PulsePassword,
+		URL:      options.AMQPUrl,
+		Namespace: options.Namespace}
 }
 
 // connect is called internally, lazily, the first time Consume is called.
@@ -272,7 +284,7 @@ func (c *Connection) Consume(
 	var q amqp.Queue
 	if queueName == "" {
 		q, err = ch.QueueDeclare(
-			"queue/"+c.User+"/"+uuid.New(), // name
+			c.Namespace+"/"+uuid.New(), // name
 			false, // durable
 			// unnamed queues get deleted when disconnected
 			true, // delete when usused
@@ -283,7 +295,7 @@ func (c *Connection) Consume(
 		)
 	} else {
 		q, err = ch.QueueDeclare(
-			"queue/"+c.User+"/"+queueName, // name
+			c.Namespace+"/"+queueName, // name
 			false, // durable
 			false, // delete when usused
 			false, // exclusive
