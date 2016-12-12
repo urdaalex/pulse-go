@@ -1,4 +1,4 @@
-package taskcluster-pulse
+package taskclusterpulse
 
 import(
     "os"
@@ -9,6 +9,10 @@ import(
     pulsewrapper "github.com/taskcluster/pulse-go/pulse"
 )
 
+// 
+// 
+// 
+// 
 func NewConnection(clientID string, accessToken string, amqpUrl string, namespace string) (pulsewrapper.Connection, error) {
 	if clientID == "" {
 		clientID = os.Getenv("CLIENT_ID")  
@@ -36,7 +40,15 @@ func NewConnection(clientID string, accessToken string, amqpUrl string, namespac
     }
     tcPulse := pulse.New(creds)
 
-    tcCreds, err := tcPulse.Namespace(namespace, &pulse.NamespaceCreationRequest{/*TODO provide contact info*/})
+    tcCreds, err := tcPulse.Namespace(namespace,
+        &pulse.NamespaceCreationRequest{/*
+            Contact: pulse.SendEmailRequest{
+                Method: "email",
+                Payload: {
+                    Address: "test@falskjdhfasdkf.com",
+                },
+            },*/
+        })
     
     if err != nil {
         return pulsewrapper.Connection{}, err
@@ -49,7 +61,7 @@ func NewConnection(clientID string, accessToken string, amqpUrl string, namespac
 			PulseUser:		pulseUser,       
 			PulsePassword:  pulsePassword,
 			AMQPUrl:  		amqpUrl,
-			Namespace:		prefix}
+			QueuePrefix:	prefix}
 
     //supply creds to pulse wrapper
     pulseGoConnection := pulsewrapper.NewConnection(options)

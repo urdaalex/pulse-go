@@ -14,7 +14,7 @@ func TestConnectionURLDetermination(t *testing.T) {
 			PulseUser:		user,       
 			PulsePassword:  password,
 			AMQPUrl:  		url,
-			Namespace:		""}
+			QueuePrefix:		""}
 		conn := pulse.NewConnection(options)
 		if conn.URL != resolvedUrl {
 			t.Fail()
@@ -35,7 +35,7 @@ func TestUsernameDetermination(t *testing.T) {
 			PulseUser:		"",       
 			PulsePassword:  "",
 			AMQPUrl:  		url,
-			Namespace:		""}
+			QueuePrefix:		""}
 		conn := pulse.NewConnection(options)
 		if conn.User != resolvedUser {
 			fmt.Println("Username: " + conn.User + " != " + resolvedUser + " (derived from " + url + ")")
@@ -64,7 +64,7 @@ func TestPasswordDetermination(t *testing.T) {
 			PulseUser:		"",       
 			PulsePassword:  "",
 			AMQPUrl:  		url,
-			Namespace:		""}
+			QueuePrefix:		""}
 		conn := pulse.NewConnection(options)
 		if conn.Password != resolvedPassword {
 			fmt.Println("Password: " + conn.Password + " != " + resolvedPassword + " (derived from " + url + ")")

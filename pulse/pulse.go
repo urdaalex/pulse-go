@@ -56,17 +56,18 @@ type Connection struct {
 	User        string
 	Password    string
 	URL         string
-	Namespace	string
+	QueuePrefix	string
 	AMQPConn    *amqp.Connection
 	connected   bool
 	closedAlert chan amqp.Error
 }
 
+// Options for creating a new connection
 type NewConnectionOptions struct {
 	PulseUser       string
 	PulsePassword   string
 	AMQPUrl	        string
-	Namespace		string	
+	QueuePrefix		string	
 }
 
 // match applies the regular expression regex to string text, and only replaces
@@ -81,35 +82,47 @@ func match(regex, text string) string {
 // NewConnection prepares a Connection object with a username, password and an
 // AMQP URL, but does not actually make an outbound connection to the service.
 // An actual network connection will be made the first time the Consume method
-// is called.
+// is called. All arguments are encapsulated in the NewConnectionOptions struct,
+// which is a wrapper for the parameters listed below
 //
 // The logic for deriving the AMQP url is as follows:
 //
-// If the provided amqpUrl is a non-empty string, it will be used to set the
+// If the provided AMQPUrl is a non-empty string, it will be used to set the
 // AMQP URL.  Otherwise, production will be used
 // ("amqps://pulse.mozilla.org:5671")
 //
 // The pulse user is determined as follows:
 //
-// If the provided pulseUser is a non-empty string, it will be used for AMQP
+// If the provided PulseUser is a non-empty string, it will be used for AMQP
 // connection user.  Otherwise, if the amqlUrl contains a user, it will be
 // used.  Otherwise, if environment variable PULSE_USERNAME is non empty, it
 // will be used.  Otherwise, the value "guest" will be used.
 //
 // The pulse password is determined as follows:
 //
-// If the provided pulsePassword is a non-empty string, it will be used for
+// If the provided PulsePassword is a non-empty string, it will be used for
 // AMQP connection password.  Otherwise, if the amqlUrl contains a password, it
 // will be used.  Otherwise, if environment variable PULSE_PASSWORD is non
 // empty, it will be used.  Otherwise, the value "guest" will be used.
 //
+// The queue prefix is determined as follows:
+// 
+// If the provided QueuePrefix is a non-empty string, it will be prepended to
+// the pulse queue name. Otherwise, if the QueuePrefix is an empty string, 
+// the default prefix "queue/" will be used 
+//   
 // Finally, the AMQP url is adjusted, by stripping out any user/password
 // contained inside it, and then embedding the derived username and password
 // above.
 //
 // Typically, a call to this method would look like:
-//
-//  	conn := pulse.NewConnection("", "", "")
+//		options := NewConnectionOptions{
+//			PulseUser:		"",       
+//			PulsePassword:  "",
+//			AMQPUrl:  		"",
+//			QueuePrefix:	""}
+
+//  	conn := pulse.NewConnection(options)
 //
 // whereby the client program would export PULSE_USERNAME and PULSE_PASSWORD
 // environment variables before calling the go program, and the empty url would
@@ -138,8 +151,8 @@ func NewConnection(options NewConnectionOptions) Connection {
 	if options.PulsePassword == "" {
 		options.PulsePassword = "guest"
 	}
-	if options.Namespace=="" {
-		options.Namespace="queue/"+options.PulseUser
+	if options.QueuePrefix=="" {
+		options.QueuePrefix="queue/"+options.PulseUser
 	}
 
 	// now substitute in real username and password into url...
@@ -149,7 +162,7 @@ func NewConnection(options NewConnectionOptions) Connection {
 		User:     options.PulseUser,
 		Password: options.PulsePassword,
 		URL:      options.AMQPUrl,
-		Namespace: options.Namespace}
+		QueuePrefix: options.QueuePrefix}
 }
 
 // connect is called internally, lazily, the first time Consume is called.
@@ -284,7 +297,7 @@ func (c *Connection) Consume(
 	var q amqp.Queue
 	if queueName == "" {
 		q, err = ch.QueueDeclare(
-			c.Namespace+"/"+uuid.New(), // name
+			c.QueuePrefix+"/"+uuid.New(), // name
 			false, // durable
 			// unnamed queues get deleted when disconnected
 			true, // delete when usused
@@ -295,7 +308,7 @@ func (c *Connection) Consume(
 		)
 	} else {
 		q, err = ch.QueueDeclare(
-			c.Namespace+"/"+queueName, // name
+			c.QueuePrefix+"/"+queueName, // name
 			false, // durable
 			false, // delete when usused
 			false, // exclusive
