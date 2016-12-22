@@ -107,10 +107,10 @@ func main() {
 	}
 
 	options := pulse.NewConnectionOptions{
-		PulseUser:		pulseUser,       
-		PulsePassword:  pulsePassword,
-		AMQPUrl:  		amqpUrl,
-		QueuePrefix:		""}
+		PulseUser:     pulseUser,
+		PulsePassword: pulsePassword,
+		AMQPUrl:       amqpUrl,
+		QueuePrefix:   ""}
 
 	p1 := pulse.NewConnection(options)
 	// If not connecting to production, you can specify a different url...
